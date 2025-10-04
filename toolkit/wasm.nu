@@ -25,37 +25,42 @@ const wasm_compatible_crates = [
 
 def "prep wasm" [] {
     ^rustup target add wasm32-unknown-unknown
+    ^rustup target add wasm32-wasip2
 }
 
 # build crates for wasm
-export def "build wasm" [] {
+export def "build wasm" [
+    --target: string = "wasm32-unknown-unknown"  # wasm target to build for (wasm32-unknown-unknown or wasm32-wasip2)
+] {
     prep wasm
 
     for crate in $wasm_compatible_crates {
-        print $'(char nl)Building ($crate) for wasm'
+        print $'(char nl)Building ($crate) for ($target)'
         print '----------------------------'
         (
             ^cargo build
                 -p $crate
-                --target wasm32-unknown-unknown
+                --target $target
                 --no-default-features
         )
     }
 }
 
 # make sure no api is used that doesn't work with wasm
-export def "clippy wasm" [] {
+export def "clippy wasm" [
+    --target: string = "wasm32-unknown-unknown"  # wasm target to check for (wasm32-unknown-unknown or wasm32-wasip2)
+] {
     prep wasm
 
     $env.CLIPPY_CONF_DIR = $nushell_dir | path join clippy wasm
 
     for crate in $wasm_compatible_crates {
-        print $'(char nl)Checking ($crate) for wasm'
+        print $'(char nl)Checking ($crate) for ($target)'
         print '----------------------------'
         (
             ^cargo clippy
                 -p $crate
-                --target wasm32-unknown-unknown
+                --target $target
                 --no-default-features
                 --
                 -D warnings
